@@ -40,9 +40,6 @@ export default class App extends Component {
   };
 
   handleLoadMore = () => {
-    const { searchText, page } = this.state;
-    this.loadPictures(searchText, page + 1, true);
-
     this.setState(prevState => {
       return {
         page: prevState.page + 1,
@@ -52,37 +49,47 @@ export default class App extends Component {
 
   handleSubmitForm = event => {
     event.preventDefault();
-
     const { search } = event.target.elements;
 
-    this.loadPictures(search.value);
-
     this.setState({ searchText: search.value });
-
-    this.setState({
-      page: 1,
-    });
   };
 
   loadPictures = async (searchText = '', page = 1, append = false) => {
-    try {
-      this.setState({ isLoading: true });
-      const { hits } = await fetchPictures(searchText, page);
-      this.setState(prevState => {
-        return {
-          pictures: append ? [...prevState.pictures, ...hits] : hits,
-        };
-      });
-    } catch (error) {
-      console.log(error.message);
-    } finally {
-      this.setState({ isLoading: false });
+    if (!this.state.isLoading) {
+      try {
+        this.setState({ isLoading: true });
+        const { hits } = await fetchPictures(searchText, page);
+        this.setState(prevState => {
+          return {
+            pictures: append ? [...prevState.pictures, ...hits] : hits,
+          };
+        });
+      } catch (error) {
+        console.log(error.message);
+      } finally {
+        this.setState({ isLoading: false });
+      }
     }
   };
 
-  componentDidMount() {
-    this.loadPictures();
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.searchText !== this.state.searchText) {
+      this.setState({ pictures: [] });
+
+      this.setState({ page: 1 });
+
+      this.loadPictures(this.state.searchText);
+    }
+
+    if (prevState.page !== this.state.page) {
+      const { searchText, page } = this.state;
+      this.loadPictures(searchText, page, true);
+    }
   }
+
+  // componentDidMount() {
+  //   this.loadPictures();
+  // }
 
   render() {
     return (
